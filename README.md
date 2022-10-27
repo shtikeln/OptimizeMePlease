@@ -1,3 +1,10 @@
+# My Result
+
+|               Method |         Mean |      Error |           Ratio |       Gen0 |       Gen1 |      Gen2 |    Allocated |
+|--------------------- |-------------:|-----------:|----------------:|-----------:|-----------:|----------:|-------------:|
+|           GetAuthors | 1,453.556 ms | 28.6683 ms |        baseline | 29000.0000 | 10000.0000 | 3000.0000 | 182798.23 KB |
+| GetAuthors_Optimized |     9.796 ms |  0.1915 ms | 148.759x faster |          - |          - |         - |     78.12 KB |
+
 # OptimizeMePlease
 
 ## You are probably here because you saw my post on Linkedin.

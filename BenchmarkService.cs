@@ -1,4 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Columns;
+using BenchmarkDotNet.Configs;
 using Microsoft.EntityFrameworkCore;
 using OptimizeMePlease.Context;
 using System.Collections.Generic;
@@ -7,10 +9,20 @@ using System.Linq;
 namespace OptimizeMePlease
 {
     [MemoryDiagnoser]
+    [HideColumns(Column.Job, Column.RatioSD, Column.StdDev, BenchmarkDotNet.Columns.Column.AllocRatio)]
+    [Config(typeof(Config))]
     public class BenchmarkService
     {
         public BenchmarkService()
         {
+        }
+
+        private class Config : ManualConfig
+        {
+            public Config()
+            {
+                SummaryStyle = BenchmarkDotNet.Reports.SummaryStyle.Default.WithRatioStyle(RatioStyle.Trend);
+            }
         }
 
         /// <summary>
@@ -19,7 +31,7 @@ namespace OptimizeMePlease
         /// and all his/her books (Book Name/Title and Publishment Year) published before 1900
         /// </summary>
         /// <returns></returns>
-        [Benchmark]
+        [Benchmark(Baseline = true)]
         public List<AuthorDTO> GetAuthors()
         {
             using var dbContext = new AppDbContext();
@@ -86,9 +98,38 @@ namespace OptimizeMePlease
         }
 
         [Benchmark]
+        /// <summary>
+        /// Get top 2 Authors (FirstName, LastName, UserName, Email, Age, Country) 
+        /// from country Serbia aged 27, with the highest BooksCount
+        /// and all his/her books (Book Name/Title and Publishment Year) published before 1900
+        /// </summary>
+        /// <returns></returns>
         public List<AuthorDTO> GetAuthors_Optimized()
         {
-            List<AuthorDTO> authors = new List<AuthorDTO>();
+            using var dbContext = new AppDbContext();
+
+            var authors = dbContext.Authors
+                .Where(x => x.Country == "Serbia" && x.Age == 27)
+                .OrderByDescending(x => x.BooksCount)
+                .Select(x => new AuthorDTO
+                {
+                    UserFirstName = x.User.FirstName,
+                    UserLastName = x.User.LastName,
+                    UserName = x.User.UserName,
+                    AuthorAge = x.Age,
+                    AuthorCountry = x.Country,
+                    UserEmail = x.User.Email,
+                    AllBooks = x.Books
+                    .Where(y => y.Published.Year < 1900)
+                    .Select(y => new BookDto
+                    {
+                        Id = y.Id,
+                        Name = y.Name,
+                        PublishedYear = y.Published.Year,
+                    }).ToList()
+                })
+                .Take(2)
+                .ToList();
 
             return authors;
         }
